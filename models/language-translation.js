@@ -9,14 +9,13 @@ const LanguageTranslation = sequelize.define("language_translation", {
     autoIncrement: true,
   },
   updated_by_id: DataTypes.INTEGER,
-  translation_value_current:DataTypes.STRING,
-  translation_value_review: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
+  translation_value_review: DataTypes.STRING,
+  translation_value_current: DataTypes.STRING,
+
   translation_status: {
     type: DataTypes.STRING,
     allowNull: false,
+    defaultValue: "untranslated",
   },
 });
 

@@ -1,4 +1,4 @@
 node_modules
-todo.txt
+todo.*
 package-lock.json
 *.env

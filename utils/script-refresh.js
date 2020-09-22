@@ -3,30 +3,54 @@ const Language = require("../models/language");
 const Role = require("../models/role");
 
 const data = require("./script-refresh-data");
+const LanguageTranslation = require("../models/language-translation");
 
-exports.createRoles = () => {
-  console.log("hello hi");
-  return Role.bulkCreate(data.roleData);
-};
 
-exports.createLanguages = () => {
-  return Language.bulkCreate(data.languageData);
-};
-
-exports.createTranslationItems = () => {
-  TranslationItem.bulkCreate(data.translationMasterData)
+exports.refreshDb = () => {
+  let jsonData = {};
+  Language.bulkCreate(data.languageData)
     .then((result) => {
-      // console.log("\n\n\n TRANSITION ITEM \n\n\n", result[0]);
-      // console.log("\n\n\n TRANSITION ITEM proto \n\n\n", result[0].__proto__);
+      jsonData["languages"] = result;
 
-      return result[0];
+      console.log("\n\n\n Language \n\n\n", result[0]);
+      console.log("\n\n\n Language proto \n\n\n", result[0].__proto__);
+      return TranslationItem.bulkCreate(data.translationMasterData);
     })
-    .then((data) => {
-      data.createLanguage_translation({
-        translation_status: "untranslated",
-        updated_by_id: "2",
-        languageId: "3",
-        translation_value: "hello"
+    .then((result) => {
+      console.log("\n\n\n TRANSITION ITEM \n\n\n", result[0]);
+      console.log("\n\n\n TRANSITION ITEM proto \n\n\n", result[0].__proto__);
+      return result;
+    })
+    .then((result) => {
+      result.map((item) => {
+        jsonData["languages"].map((language) => {
+          let jsonRefresh = {
+            languageId: language["id"],
+            translationItemId: item["id"],
+          };
+          if (language["id"] === 1) {
+            jsonRefresh["translation_status"] = "reviewed";
+            jsonRefresh["translation_value_current"] =
+              item["translation_value"];
+            jsonRefresh["translation_value_review"] = item["translation_value"];
+          }
+          LanguageTranslation.create(jsonRefresh)
+            .then((result) => {
+              
+            })
+            .catch((err) => {
+              console.log(err);
+            });
+        });
       });
-    }); 
+      return Role.bulkCreate(data.roleData);
+    })
+    .then(result => {
+      return true
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 };
+
+exports.createLanguageTranslationsEnglish = () => {};

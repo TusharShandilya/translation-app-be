@@ -9,11 +9,18 @@ const User = sequelize.define("user", {
     autoIncrement: true,
   },
   name: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   email: {
-    type: DataTypes.STRING
-  }
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  is_admin: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+  },
 });
 
 module.exports = User;
