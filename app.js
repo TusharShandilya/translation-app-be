@@ -74,29 +74,40 @@ sequelize
     return true;
   })
   .then((result) => {
-    return User.findByPk(1);
+    if(force) {
+      return User.findByPk(1);
+    }
+    return;
   })
   .then((user) => {
-    if (!user) {
-      return User.create({
-        name: "tushar",
-        email: "test@test.com",
-        is_admin: true,
-      });
-    }
-    return user;
+    if(force) {
+      if (!user) {
+        return User.create({
+          name: "tushar",
+          email: "test@test.com",
+          is_admin: true,
+        })
+      }
+      return user;
+      
+          }
+          return;
   })
-  // .then((user) => {
-  // user.createUser_language_role({
-  //   languageId: "1",
-  //   roleId: "1",
-  // });
-  // user.createUser_language_role({
-  //   languageId: "3",
-  //   roleId: "2",
-  // });
-  //   return true
-  // })
+  .then((user) => {
+    if(force) {
+
+      user.createUser_language_role({
+        languageId: "1",
+        roleId: "1",
+      });
+      user.createUser_language_role({
+        languageId: "3",
+        roleId: "2",
+      });
+      return;
+    }
+    return;
+  })
   .then((result) => {
     app.listen(8080, () => {
       console.log("app started");

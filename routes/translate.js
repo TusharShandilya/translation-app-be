@@ -1,22 +1,28 @@
 const express = require("express");
 
-const { getTranslations }= require("../controllers/translate");
+const {
+  getTranslations,
+  getLanguages,
+  getRoles,
+  putTranslations,
+  putTranslationsReview,
+} = require("../controllers/translate");
 
 const router = express.Router();
 
 // GET translations
 router.get("/translations", getTranslations);
 
-// GET translation by id
-router.get("/translation/:translationId");
-
-// GET languages 
-router.get("/language");
+// GET languages
+router.get("/languages", getLanguages);
 
 // GET roles
-router.get("/role");
+router.get("/roles", getRoles);
 
-// PUT translation by id
-router.put("/translation/:translationId");
+// PUT translations
+router.put("/translations", putTranslations);
+
+// PUT review translations
+router.put("/translations/review", putTranslationsReview);
 
 module.exports = router;

@@ -9,6 +9,7 @@ const LanguageTranslation = sequelize.define("language_translation", {
     autoIncrement: true,
   },
   updated_by_id: DataTypes.INTEGER,
+  reviewed_by_id: DataTypes.INTEGER,
   translation_value_review: DataTypes.STRING,
   translation_value_current: DataTypes.STRING,
 
