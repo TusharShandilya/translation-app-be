@@ -128,7 +128,7 @@ exports.login = (req, res, next) => {
           email: loadedUser.email,
           userId: loadedUser.id.toString(),
         },
-        "secretkeyhere",
+        process.env.JWT_SECRET,
         { expiresIn: "1h" }
       );
 

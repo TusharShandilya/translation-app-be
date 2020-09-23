@@ -1,3 +1,10 @@
+const path = require("path");
+if (process.env.NODE_ENV === "production") {
+  require("dotenv").config();
+} else {
+  require("dotenv").config({path: path.resolve(process.cwd(), '.env.dev')});
+}
+
 // IMPORTS
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -61,21 +68,12 @@ LanguageTranslation.belongsTo(TranslationItem);
 Language.hasMany(LanguageTranslation);
 LanguageTranslation.belongsTo(Language);
 
-const force = false;
-const refresher = require("./utils/script-refresh");
-
 sequelize
-  .sync({ force: force })
-  // .sync()
-  .then((result) => {
-    if (force) {
-      return refresher.refreshDb();
-    }
-    return;
-  })
-  .then((result) => {
-    app.listen(8080, () => {
-      console.log("app started");
+  .sync()
+  .then(() => {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+      console.log("app started on port: ", PORT);
     });
   })
   .catch((err) => {
