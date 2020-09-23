@@ -2,3 +2,4 @@ node_modules
 todo.*
 package-lock.json
 *.env*
+bin

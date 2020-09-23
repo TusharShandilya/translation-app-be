@@ -133,7 +133,6 @@ exports.putUserRoleById = (req, res, next) => {
       return User.findByPk(userId);
     })
     .then((user) => {
- 
       if (!user) {
         const error = new Error("user not found");
         error.statusCode = 404;
@@ -145,14 +144,13 @@ exports.putUserRoleById = (req, res, next) => {
         throw error;
       }
       jsonData["user"] = user;
-      console.log("data", jsonData);
+
       return UserLanguageRole.update(
         { roleId: jsonData["role"]["id"] },
         { where: { userId: userId, languageId: jsonData["language"]["id"] } }
       );
     })
     .then((result) => {
-      console.log(result[0]);
       if (!result || result[0] < 1) {
         const error = new Error("data mismatch");
         error.statusCode = 400;
@@ -231,7 +229,6 @@ exports.putUserById = (req, res, next) => {
 
 // POST new language
 exports.postLanguage = (req, res, next) => {
-  
   const userId = req.userId;
   const { language } = req.body;
 
@@ -256,9 +253,8 @@ exports.postLanguage = (req, res, next) => {
       });
     })
     .then((results) => {
-      console.log(results);
       const result = results[0];
-      console.log(result);
+
       if (!result) {
         return UserLanguageRole.create({
           languageId: jsonData["language"]["id"],

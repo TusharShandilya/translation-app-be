@@ -25,7 +25,6 @@ const User = require("./models/user");
 
 // CONFIG
 const app = express();
-// ? static folder needed?
 app.use(bodyParser.json());
 
 // HEADERS
@@ -40,9 +39,9 @@ app.use((req, res, next) => {
 });
 
 // ROUTES
-app.use("/auth", authRoutes);
-app.use("/user", userRoutes);
-app.use("/translate", translateRoutes);
+app.use("api/auth", authRoutes);
+app.use("api/user", userRoutes);
+app.use("api/translate", translateRoutes);
 
 // ERROR HANDLING
 app.use((error, req, res, next) => {

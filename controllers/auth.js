@@ -18,8 +18,6 @@ exports.signup = (req, res, next) => {
     res.json(status).json({ message, data });
   }
 
-  console.log("there was an attempt");
-
   const { email, name, password } = req.body;
 
   let jsonData = {};
@@ -82,7 +80,7 @@ exports.signup = (req, res, next) => {
       if (!result) {
         throw "failed to create userLanguagerole";
       }
-      console.log(jsonData);
+      
       res.status(201).json({
         success: true,
         message: "User Created",

@@ -21,7 +21,7 @@ exports.getTranslations = (req, res, next) => {
   Language.findAll(filterLanguage)
     .then((languages) => {
       const language = languages[0];
-      console.log(language);
+
       if (!language) {
         let error = new Error("Language not found");
         error.statusCode = 404;
@@ -42,8 +42,7 @@ exports.getTranslations = (req, res, next) => {
     })
     .then((items) => {
       // todo error handling here...
-      // include value
-      console.log(items[0].language);
+
       res.status(200).json({
         success: true,
         translations: items.map((item) => ({
@@ -153,7 +152,7 @@ exports.putTranslations = (req, res, next) => {
 
       return Promise.all(
         translations.map((translation) => {
-          console.log(translation);
+          
           return LanguageTranslation.update(
             {
               translation_value_current: translation.translationValue,
