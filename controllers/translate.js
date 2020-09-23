@@ -112,7 +112,7 @@ exports.getRoles = (req, res, next) => {
 
 // PUT translations
 exports.putTranslations = (req, res, next) => {
-  const userId = 1;
+  const userId = req.userId;
   // translations [{
   //   translationId,
   //   translationValue,
@@ -182,7 +182,7 @@ exports.putTranslations = (req, res, next) => {
 };
 // PUT translations review
 exports.putTranslationsReview = (req, res, next) => {
-  const userId = 1;
+  const userId = req.userId;
   // translations [{
   //   translationId
   // }];

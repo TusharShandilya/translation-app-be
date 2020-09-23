@@ -5,11 +5,18 @@ const UserLanguageRole = require("../models/user-language-role");
 
 // GET all users
 exports.getUsers = (req, res, next) => {
-  // check for signed in user auth...
-  // * !is_admin -> throw err 403
-  User.findAll({
-    include: { model: UserLanguageRole, include: [Role, Language] },
-  })
+  User.findByPk(req.userId)
+    .then((loggedInUser) => {
+      if (!loggedInUser.is_admin) {
+        let error = new Error("Only admin allowed access");
+        error.statusCode = 403;
+        throw error;
+      }
+
+      return User.findAll({
+        include: { model: UserLanguageRole, include: [Role, Language] },
+      });
+    })
     .then((users) => {
       if (!users) {
         const error = new Error("users not found");
@@ -49,12 +56,21 @@ exports.getUsers = (req, res, next) => {
 // GET user by user id
 exports.getUserById = (req, res, next) => {
   const { userId } = req.params;
-  // check for signed in user auth...
-  // * !is_admin -> throw err 403 OR
-  // * !signedInUser -> throw err 403
-  User.findByPk(userId, {
-    include: { model: UserLanguageRole, include: [Role, Language] },
-  })
+
+  User.findByPk(req.userId)
+    .then((loggedInUser) => {
+      if (!loggedInUser.is_admin) {
+        if (loggedInUser.id !== userId) {
+          const error = new Error("Only admin allowed access");
+          error.statusCode = 403;
+          throw error;
+        }
+      }
+
+      return User.findByPk(userId, {
+        include: { model: UserLanguageRole, include: [Role, Language] },
+      });
+    })
     .then((user) => {
       if (!user) {
         const error = new Error("user not found");
@@ -117,11 +133,15 @@ exports.putUserRoleById = (req, res, next) => {
       return User.findByPk(userId);
     })
     .then((user) => {
-      // check for signed in user auth...
-      // * !is_admin -> throw err 403
+ 
       if (!user) {
         const error = new Error("user not found");
         error.statusCode = 404;
+        throw error;
+      }
+      if (!user.is_admin) {
+        let error = new Error("Only admin allowed access");
+        error.statusCode = 403;
         throw error;
       }
       jsonData["user"] = user;
@@ -166,16 +186,13 @@ exports.putUserRoleById = (req, res, next) => {
 
 // PUT user personal info by user id
 exports.putUserById = (req, res, next) => {
-  const userId = 2;
+  const userId = req.userId;
   const { name, email } = req.body;
 
   let jsonData = {};
 
   User.findByPk(userId)
     .then((user) => {
-      // check for signed in user auth...
-      // * !signedInUser -> throw err 403
-
       if (!user) {
         const error = new Error("user not found");
         error.statusCode = 404;
@@ -214,8 +231,8 @@ exports.putUserById = (req, res, next) => {
 
 // POST new language
 exports.postLanguage = (req, res, next) => {
-  // req.userId
-  const userId = 2;
+  
+  const userId = req.userId;
   const { language } = req.body;
 
   let jsonData = {};
@@ -276,7 +293,7 @@ exports.postLanguage = (req, res, next) => {
 
 // DELETE language
 exports.deleteLanguage = (req, res, next) => {
-  const userId = 2;
+  const userId = req.userId;
   const { language } = req.body;
 
   const jsonData = {};
@@ -317,7 +334,6 @@ exports.deleteLanguage = (req, res, next) => {
       });
     })
     .then((result) => {
-      
       res.status(202).json({
         success: true,
         message: "Language for user deleted",

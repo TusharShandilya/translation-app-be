@@ -61,50 +61,15 @@ LanguageTranslation.belongsTo(TranslationItem);
 Language.hasMany(LanguageTranslation);
 LanguageTranslation.belongsTo(Language);
 
-let force = false;
-
+const force = false;
 const refresher = require("./utils/script-refresh");
 
 sequelize
   .sync({ force: force })
+  // .sync()
   .then((result) => {
     if (force) {
       return refresher.refreshDb();
-    }
-    return true;
-  })
-  .then((result) => {
-    if(force) {
-      return User.findByPk(1);
-    }
-    return;
-  })
-  .then((user) => {
-    if(force) {
-      if (!user) {
-        return User.create({
-          name: "tushar",
-          email: "test@test.com",
-          is_admin: true,
-        })
-      }
-      return user;
-      
-          }
-          return;
-  })
-  .then((user) => {
-    if(force) {
-
-      user.createUser_language_role({
-        languageId: "1",
-        roleId: "1",
-      });
-      user.createUser_language_role({
-        languageId: "3",
-        roleId: "2",
-      });
-      return;
     }
     return;
   })

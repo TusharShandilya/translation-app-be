@@ -1,4 +1,5 @@
 const express = require("express");
+const isAuth = require("../middlewares/is-auth");
 
 const {
   getTranslations,
@@ -11,18 +12,18 @@ const {
 const router = express.Router();
 
 // GET translations
-router.get("/translations", getTranslations);
+router.get("/translations",isAuth, getTranslations);
 
 // GET languages
-router.get("/languages", getLanguages);
+router.get("/languages", isAuth, getLanguages);
 
 // GET roles
-router.get("/roles", getRoles);
+router.get("/roles", isAuth, getRoles);
 
 // PUT translations
-router.put("/translations", putTranslations);
+router.put("/translations", isAuth, putTranslations);
 
 // PUT review translations
-router.put("/translations/review", putTranslationsReview);
+router.put("/translations/review", isAuth, putTranslationsReview);
 
 module.exports = router;
