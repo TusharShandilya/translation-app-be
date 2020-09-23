@@ -39,9 +39,9 @@ app.use((req, res, next) => {
 });
 
 // ROUTES
-app.use("api/auth", authRoutes);
-app.use("api/user", userRoutes);
-app.use("api/translate", translateRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/translate", translateRoutes);
 
 // ERROR HANDLING
 app.use((error, req, res, next) => {
