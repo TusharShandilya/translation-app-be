@@ -7,6 +7,8 @@ const {
   getRoles,
   putTranslations,
   putTranslationsReview,
+  putTranslation,
+  putTranslationReview,
 } = require("../controllers/translate");
 
 const router = express.Router();
@@ -25,5 +27,12 @@ router.put("/translations", isAuth, putTranslations);
 
 // PUT review translations
 router.put("/translations/review", isAuth, putTranslationsReview);
+
+//PUT translations 
+router.put("/translation", isAuth, putTranslation);
+// PUT review translation
+router.put("/translation/review", isAuth, putTranslationReview);
+
+
 
 module.exports = router;

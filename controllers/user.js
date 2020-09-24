@@ -18,6 +18,7 @@ exports.getUsers = (req, res, next) => {
       });
     })
     .then((users) => {
+      
       if (!users) {
         const error = new Error("users not found");
         error.statusCode = 404;

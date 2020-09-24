@@ -7,7 +7,8 @@ const UserLanguageRole = require("../models/user-language-role");
 
 // GET translations
 exports.getTranslations = (req, res, next) => {
-  const { code } = req.query;
+  const { code, page, limit } = req.query;
+  let pageLimit = parseInt(limit) || 10;
   let filterLanguage = {};
 
   if (code) {
@@ -16,6 +17,10 @@ exports.getTranslations = (req, res, next) => {
         language_code: code,
       },
     };
+  } else {
+    const error = new Error("missing info");
+    error.statusCode = 400;
+    throw err;
   }
 
   Language.findAll(filterLanguage)
@@ -27,25 +32,26 @@ exports.getTranslations = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
-      let filter = { include: Language };
+      let filter = { include: [Language, TranslationItem], where: {} };
 
-      if (code) {
-        filter = {
-          ...filter,
-          where: {
-            languageId: language["id"],
-          },
-        };
+      filter.where["languageId"] = language["id"];
+
+      if (page) {
+        filter["offset"] = (page - 1) * pageLimit;
+        filter["limit"] = pageLimit;
       }
 
-      return LanguageTranslation.findAll(filter);
+      return LanguageTranslation.findAndCountAll(filter);
     })
     .then((items) => {
       // todo error handling here...
 
+      if (pageLimit > items.count) pageLimit = items.count;
       res.status(200).json({
         success: true,
-        translations: items.map((item) => ({
+        total_items: items.count,
+        items_per_page: pageLimit,
+        translations: items.rows.map((item) => ({
           id: item.id,
           updated_by_id: item.updated_by_id,
           language: {
@@ -54,6 +60,7 @@ exports.getTranslations = (req, res, next) => {
             language_name_english: item.language.language_name_english,
             language_name_native: item.language.language_name_native,
           },
+          translation_value: item.translation_item.translation_value,
           translation_value_review: item.translation_value_review,
           translation_value_current: item.translation_value_current,
           translation_status: item.translation_status,
@@ -152,7 +159,6 @@ exports.putTranslations = (req, res, next) => {
 
       return Promise.all(
         translations.map((translation) => {
-          
           return LanguageTranslation.update(
             {
               translation_value_current: translation.translationValue,
@@ -179,6 +185,64 @@ exports.putTranslations = (req, res, next) => {
       next(err);
     });
 };
+
+// PUT translations by id
+exports.putTranslation = (req, res, next) => {
+  const userId = req.userId
+  const { translationId, translationValue } = req.body;
+
+  let userLanguages = []
+
+  User.findByPk(userId, {
+    include: { model: UserLanguageRole, include: [Role, Language] },
+  })
+    .then((user) => {
+      if (!user) {
+        const error = new Error("user not found");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      user.user_language_roles.forEach((ulr) => {
+        if (ulr.role.id === 1 || ulr.role.id === 2) {
+          userLanguages.push(ulr.language.id);
+        }
+      });
+
+      return LanguageTranslation.findByPk(translationId);
+    })
+    .then((translation) => {
+      if (userLanguages.indexOf(translation.languageId) === -1) {
+        const error = new Error("Language or Role not assigned to user");
+        error.statusCode = 403;
+        throw error;
+      }
+
+      return LanguageTranslation.update(
+        {
+          translation_value_current: translationValue,
+          translation_status: "translated",
+          updated_by_id: userId,
+        },
+        { where: { id: translationId } }
+      );
+    })
+    .then((result) => {
+      // TODO: Error handling here...
+      res.status(202).json({
+        success: true,
+        count: 1,
+        message: `${1} value(s) succesfully submitted for review`,
+      });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
 // PUT translations review
 exports.putTranslationsReview = (req, res, next) => {
   const userId = req.userId;
@@ -239,6 +303,62 @@ exports.putTranslationsReview = (req, res, next) => {
         success: true,
         count: result.length,
         message: `${result.length} value(s) succesfully submitted for review`,
+      });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+// PUT translations review
+exports.putTranslationReview = (req, res, next) => {
+  const userId = req.userId;
+  const { translationId } = req.body;
+  let userLanguages = [];
+
+  User.findByPk(userId, {
+    include: { model: UserLanguageRole, include: [Role, Language] },
+  })
+    .then((user) => {
+      if (!user) {
+        const error = new Error("user not found");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      user.user_language_roles.forEach((ulr) => {
+        if (ulr.role.id === 1) {
+          userLanguages.push(ulr.language.id);
+        }
+      });
+
+      return LanguageTranslation.findByPk(translationId);
+    })
+    .then((translation) => {
+      if (userLanguages.indexOf(translation.languageId) === -1) {
+        const error = new Error("Language or Role not assigned to user");
+        error.statusCode = 403;
+        throw error;
+      }
+
+      return LanguageTranslation.update(
+        {
+          reviewed_by_id: userId,
+          translation_status: "reviewed",
+          translation_value_review: translation.translation_value_current,
+        },
+        { where: { id: translationId } }
+      );
+    })
+    .then((result) => {
+      // TODO: Error handling here...
+      res.status(202).json({
+        success: true,
+        count: 1,
+        message: `${1} value(s) succesfully reviewed`,
       });
     })
     .catch((err) => {
