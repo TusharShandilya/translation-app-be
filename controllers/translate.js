@@ -7,7 +7,7 @@ const UserLanguageRole = require("../models/user-language-role");
 
 // GET translations
 exports.getTranslations = (req, res, next) => {
-  const { code, page, limit } = req.query;
+  const { code, page, limit, status } = req.query;
   let pageLimit = parseInt(limit) || 10;
   let filterLanguage = {};
 
@@ -34,11 +34,15 @@ exports.getTranslations = (req, res, next) => {
       }
       let filter = { include: [Language, TranslationItem], where: {} };
 
-      filter.where["languageId"] = language["id"];
-
+      if (code) {
+        filter.where["languageId"] = language["id"];
+      }
       if (page) {
         filter["offset"] = (page - 1) * pageLimit;
         filter["limit"] = pageLimit;
+      }
+      if (["reviewed", "translated", "untranslated"].includes(status)) {
+        filter.where["translation_status"] = status;
       }
 
       return LanguageTranslation.findAndCountAll(filter);
@@ -97,23 +101,22 @@ exports.getLanguages = (req, res, next) => {
 };
 
 // GET roles
-exports.getRoles = (req, res, next) => {
-  Role.findAll()
-    .then((roles) => {
-      res.status(200).json({
-        success: true,
-        data: roles.map((role) => ({
-          id: role.id,
-          role_value: role.role_value,
-        })),
-      });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+exports.getRoles = async (req, res, next) => {
+  try {
+    let roles = await Role.findAll();
+    res.status(200).json({
+      success: true,
+      data: roles.map((role) => ({
+        id: role.id,
+        role_value: role.role_value,
+      })),
     });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 // PUT translations
@@ -188,10 +191,10 @@ exports.putTranslations = (req, res, next) => {
 
 // PUT translations by id
 exports.putTranslation = (req, res, next) => {
-  const userId = req.userId
+  const userId = req.userId;
   const { translationId, translationValue } = req.body;
 
-  let userLanguages = []
+  let userLanguages = [];
 
   User.findByPk(userId, {
     include: { model: UserLanguageRole, include: [Role, Language] },

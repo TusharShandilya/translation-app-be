@@ -18,7 +18,6 @@ exports.getUsers = (req, res, next) => {
       });
     })
     .then((users) => {
-      
       if (!users) {
         const error = new Error("users not found");
         error.statusCode = 404;
@@ -229,63 +228,67 @@ exports.putUserById = (req, res, next) => {
 };
 
 // POST new language
-exports.postLanguage = (req, res, next) => {
-  const userId = req.userId;
-  const { language } = req.body;
+exports.postLanguage = async (req, res, next) => {
+  try {
+    const { userId, language } = req.body;
+    let jsonData = {};
+    let isAdmin = false
 
-  let jsonData = {};
-
-  Language.findAll({ where: { language_code: language } })
-    .then((languages) => {
-      const language = languages[0];
-      if (!language) {
-        const error = new Error("language not found");
-        error.statusCode = 404;
+    if(userId !== req.userId) {
+      let user = await User.findByPk(userId);
+      if(!user || !user.is_admin) {
+        let error = new Error("operation not allowed for this user");
+        error.statusCode = 403;
         throw error;
       }
+    }
 
-      jsonData["language"] = language;
+    let languages = await Language.findAll({ where: { language_code: language } });
 
-      return UserLanguageRole.findAll({
-        where: {
-          userId: userId,
-          languageId: language.id,
-        },
-      });
-    })
-    .then((results) => {
-      const result = results[0];
+    let fetchedLanguage = languages[0];
+    if (!fetchedLanguage) {
+      const error = new Error("language not found");
+      error.statusCode = 404;
+      throw error;
+    }
 
-      if (!result) {
-        return UserLanguageRole.create({
-          languageId: jsonData["language"]["id"],
-          userId: userId,
-          roleId: 3,
-        });
-      }
+    jsonData["language"] = fetchedLanguage;
 
-      return results;
-    })
-    .then((result) => {
-      res.status(201).json({
-        success: true,
-        user: {
-          id: result.userId,
-        },
-        role_value: "auditor",
-        language: {
-          language_code: jsonData.language.language_code,
-          language_name_native: jsonData.language.language_name_native,
-          language_name_english: jsonData.language.language_name_english,
-        },
-      });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+    let userLanguageRoles = await UserLanguageRole.findAll({
+      where: {
+        userId: userId,
+        languageId: fetchedLanguage.id,
+      },
     });
+
+    let userLanguageRole = userLanguageRoles[0];
+
+    if (!userLanguageRole) {
+      userLanguageRole = await UserLanguageRole.create({
+        languageId: jsonData["language"]["id"],
+        userId: userId,
+        roleId: 3,
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      user: {
+        id: userLanguageRole.userId,
+      },
+      role_value: "auditor",
+      language: {
+        language_code: jsonData.language.language_code,
+        language_name_native: jsonData.language.language_name_native,
+        language_name_english: jsonData.language.language_name_english,
+      },
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 // DELETE language
