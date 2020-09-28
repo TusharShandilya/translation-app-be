@@ -14,7 +14,7 @@ const {
 const router = express.Router();
 
 // GET translations
-router.get("/translations",isAuth, getTranslations);
+router.get("/translations", getTranslations);
 
 // GET languages
 router.get("/languages", isAuth, getLanguages);

@@ -80,24 +80,24 @@ exports.getTranslations = (req, res, next) => {
 };
 
 // GET languages
-exports.getLanguages = (req, res, next) => {
-  Language.findAll()
-    .then((languages) => {
-      res.status(200).json({
-        success: true,
-        data: languages.map((language) => ({
-          language_code: language.language_code,
-          language_name_english: language.language_name_english,
-          language_name_native: language.language_name_native,
-        })),
-      });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+exports.getLanguages = async (req, res, next) => {
+  try {
+    const languages = await Language.findAll();
+
+    res.status(200).json({
+      success: true,
+      data: languages.map((language) => ({
+        language_code: language.language_code,
+        language_name_english: language.language_name_english,
+        language_name_native: language.language_name_native,
+      })),
     });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 // GET roles

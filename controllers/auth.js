@@ -7,135 +7,113 @@ const UserLanguageRole = require("../models/user-language-role");
 const Language = require("../models/language");
 const Role = require("../models/role");
 
-// POST signup
-exports.signup = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const status = errors.statusCode || 500;
-    const message = errors.message;
-    const data = errors.data;
+const { v4: uuidv4 } = require("uuid");
 
-    res.json(status).json({ message, data });
+const signUp = async (token) => {
+  user = await User.create({
+    id: uuidv4(),
+    name: token["name"],
+    email: token["email"],
+    user_img: token["picture"],
+  });
+
+  // Add english to languages and give permission as "auditor"...
+
+  let language = await Language.findOne({
+    where: {
+      language_code: "en",
+    },
+  });
+
+  if (!language) {
+    throw "failed to find language";
   }
 
-  const { email, name, password } = req.body;
-
-  let jsonData = {};
-
-  User.findAll({
+  let role = await Role.findOne({
     where: {
-      email: email,
+      role_value: "auditor",
     },
-  })
-    .then((users) => {
-      if (users[0]) {
-        const error = new Error("User already exists");
-        error.statusCode = 409;
-        throw error;
-      }
+  });
 
-      return bcrypt.hash(password, 12);
-    })
-    .then((hashedPassword) => {
-      return User.create(
+  if (!role) {
+    throw "failed to find role";
+  }
+
+  let ulr = await UserLanguageRole.create({
+    userId: user.id,
+    roleId: role.id,
+    languageId: language.id,
+  });
+
+  if (!ulr) {
+    throw "failed to create userLanguagerole";
+  }
+
+  return {
+    success: true,
+    message: "user created",
+    data: {
+      name: user.name,
+      email: user.email,
+      user_img: user.user_img,
+      is_admin: user.is_admin,
+      user_language_roles: [
         {
-          name: name,
-          email: email,
-          password: hashedPassword,
+          role_value: role.role_value,
+          language: {
+            code: language.language_code,
+            name_english: language.language_name_english,
+            name_native: language.language_name_native,
+          },
         },
-        { include: UserLanguageRole }
-      );
-    })
-    .then((user) => {
-      jsonData["user"] = user;
-      return Language.findAll({
-        where: {
-          language_code: "en",
-        },
-      });
-    })
-    .then((languages) => {
-      jsonData["language"] = languages[0];
-      if (!languages[0]) {
-        throw "failed to find language";
-      }
-      return Role.findAll({
-        where: {
-          role_value: "reviewer",
-        },
-      });
-    })
-    .then((roles) => {
-      if (!roles[0]) {
-        throw "failed to find role";
-      }
-      jsonData["role"] = roles[0];
-      return UserLanguageRole.create({
-        userId: jsonData["user"]["id"],
-        roleId: jsonData["role"]["id"],
-        languageId: jsonData["language"]["id"],
-      });
-    })
-    .then((result) => {
-      if (!result) {
-        throw "failed to create userLanguagerole";
-      }
-      
-      res.status(201).json({
-        success: true,
-        message: "User Created",
-        userId: jsonData["user"]["id"],
-      });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
+      ],
+    },
+  };
 };
 
 // POST login
-exports.login = (req, res, next) => {
-  const { email, password } = req.body;
-  let loadedUser;
-  User.findAll({
-    where: {
-      email: email,
-    },
-  })
-    .then((users) => {
-      const user = users[0];
-      if (!user) {
-        const error = new Error("A user with this email could not be found");
-        throw error;
-      }
-
-      loadedUser = user;
-      return bcrypt.compare(password, user.password);
-    })
-    .then((isEqual) => {
-      if (!isEqual) {
-        const error = new Error("Incorrect password");
-        error.statusCode = 401;
-        throw error;
-      }
-
-      const token = jwt.sign(
-        {
-          email: loadedUser.email,
-          userId: loadedUser.id.toString(),
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "1h" }
-      );
-
-      res.status(200).json({ token: token, userId: loadedUser.id.toString });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+exports.login = async (req, res, next) => {
+  try {
+    const user = await User.findOne({
+      where: { email: req.decodedToken.email },
+      include: { model: UserLanguageRole, include: [Role, Language] },
     });
+
+    let jsonData;
+
+    if (!user) {
+      // Create new user...
+
+      jsonData = await signUp(req.decodedToken);
+
+      res.status(201).json(jsonData);
+      return;
+    }
+
+    console.log("user", user);
+    res.status(200).json({
+      success: true,
+      message: "user data sent",
+      data: {
+        name: user.name,
+        email: user.email,
+        user_img: user.user_img,
+        is_admin: user.is_admin,
+        user_language_roles: user.user_language_roles.map((ulr) => ({
+          id: ulr.id,
+          role: ulr.role.role_value,
+          language: {
+            code: ulr.language.language_code,
+            name_native: ulr.language.language_name_native,
+            name_english: ulr.language.language_name_english,
+          },
+        })),
+      },
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };

@@ -2,7 +2,7 @@ const path = require("path");
 if (process.env.NODE_ENV === "production") {
   require("dotenv").config();
 } else {
-  require("dotenv").config({path: path.resolve(process.cwd(), '.env.dev')});
+  require("dotenv").config({ path: path.resolve(process.cwd(), ".env.dev") });
 }
 
 // IMPORTS
@@ -10,6 +10,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 
 // CUSTOM IMPORTS
+const adminRoutes = require("./routes/admin");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 const translateRoutes = require("./routes/translate");
@@ -32,13 +33,14 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Methods",
-    "OPTIONS, GET, POST, PUT, PATCH, DELETE"
+    "OPTIONS, POST, PUT, PATCH, DELETE, GET"
   );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   next();
 });
 
 // ROUTES
+app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/translate", translateRoutes);
@@ -67,8 +69,13 @@ LanguageTranslation.belongsTo(TranslationItem);
 Language.hasMany(LanguageTranslation);
 LanguageTranslation.belongsTo(Language);
 
+const refresh = require("./bin/script-refresh");
 sequelize
   .sync()
+  // .sync({force: true})
+  // .then(() => {
+  //   return refresh._db()
+  // })
   .then(() => {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
