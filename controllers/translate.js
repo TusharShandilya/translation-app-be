@@ -17,10 +17,6 @@ exports.getTranslations = (req, res, next) => {
         language_code: code,
       },
     };
-  } else {
-    const error = new Error("missing info");
-    error.statusCode = 400;
-    throw err;
   }
 
   Language.findAll(filterLanguage)

@@ -7,13 +7,13 @@ const UserLanguageRole = require("../models/user-language-role");
 // GET all users
 exports.getUsers = async (req, res, next) => {
   try {
-    const loggedInUser = await User.findByPk(req.decodeToken.userid);
+    // const loggedInUser = await User.findByPk(req.decodeToken.userid);
 
-    if (!loggedInUser.is_admin) {
-      let error = new Error("User not allowed operation");
-      error.statusCode = 403;
-      throw error;
-    }
+    // if (!loggedInUser.is_admin) {
+    //   let error = new Error("User not allowed operation");
+    //   error.statusCode = 403;
+    //   throw error;
+    // }
 
     const users = await User.findAll({
       include: { model: UserLanguageRole, include: [Role, Language] },
