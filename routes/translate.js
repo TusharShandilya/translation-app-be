@@ -28,7 +28,7 @@ router.put("/translations", isAuth, putTranslations);
 // PUT review translations
 router.put("/translations/review", isAuth, putTranslationsReview);
 
-//PUT translations 
+//PUT translation
 router.put("/translation", isAuth, putTranslation);
 // PUT review translation
 router.put("/translation/review", isAuth, putTranslationReview);

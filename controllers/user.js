@@ -3,7 +3,6 @@ const Role = require("../models/role");
 const User = require("../models/user");
 const UserLanguageRole = require("../models/user-language-role");
 
-
 // GET user by user id
 exports.getUserById = async (req, res, next) => {
   try {
@@ -183,12 +182,16 @@ exports.putUserById = async (req, res, next) => {
 // POST new language
 exports.postLanguage = async (req, res, next) => {
   try {
-    const { userId, language } = req.body;
+    const { userEmail, language } = req.body;
     let jsonData = {};
 
-    if (userId !== req.userId) {
-      let signedInUser = await User.findByPk(req.userId);
+    let signedInUser = await User.findOne({
+      where: {
+        email: req.decodedToken.email,
+      },
+    });
 
+    if (userEmail !== req.decodedToken.email) {
       if (!signedInUser.is_admin) {
         const error = new Error("user not allowed this operation");
         error.statusCode = 403;
@@ -196,11 +199,11 @@ exports.postLanguage = async (req, res, next) => {
       }
     }
 
-    let languages = await Language.findAll({
+    let fetchedLanguage = await Language.findOne({
       where: { language_code: language },
     });
 
-    let fetchedLanguage = languages[0];
+    
     if (!fetchedLanguage) {
       const error = new Error("language not found");
       error.statusCode = 404;
@@ -211,7 +214,7 @@ exports.postLanguage = async (req, res, next) => {
 
     let userLanguageRoles = await UserLanguageRole.findAll({
       where: {
-        userId: userId,
+        userId: signedInUser.id,
         languageId: fetchedLanguage.id,
       },
     });
@@ -221,7 +224,7 @@ exports.postLanguage = async (req, res, next) => {
     if (!userLanguageRole) {
       userLanguageRole = await UserLanguageRole.create({
         languageId: jsonData["language"]["id"],
-        userId: userId,
+        userId: signedInUser.id,
         roleId: 3,
       });
     }
@@ -229,13 +232,13 @@ exports.postLanguage = async (req, res, next) => {
     res.status(201).json({
       success: true,
       user: {
-        id: userLanguageRole.userId,
+        email: signedInUser.email,
       },
       role_value: "auditor",
       language: {
-        language_code: jsonData.language.language_code,
-        language_name_native: jsonData.language.language_name_native,
-        language_name_english: jsonData.language.language_name_english,
+        code: jsonData.language.language_code,
+        name_native: jsonData.language.language_name_native,
+        name_english: jsonData.language.language_name_english,
       },
     });
   } catch (err) {

@@ -7,7 +7,7 @@ const router = express.Router()
 
 
 // GET all users
-router.get("/users", getUsers)
+router.get("/users",isAuth, getUsers)
 
 // PUT bulk update language roles by user id
 router.put("/roles", putRolesByUserEmail)

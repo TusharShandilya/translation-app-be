@@ -3,17 +3,18 @@ const Role = require("../models/role");
 const User = require("../models/user");
 const UserLanguageRole = require("../models/user-language-role");
 
-
 // GET all users
 exports.getUsers = async (req, res, next) => {
   try {
-    // const loggedInUser = await User.findByPk(req.decodeToken.userid);
+    const loggedInUser = await User.findOne({
+      where: { email: req.decodedToken.email },
+    });
 
-    // if (!loggedInUser.is_admin) {
-    //   let error = new Error("User not allowed operation");
-    //   error.statusCode = 403;
-    //   throw error;
-    // }
+    if (!loggedInUser.is_admin) {
+      let error = new Error("User not allowed operation");
+      error.statusCode = 403;
+      throw error;
+    }
 
     const users = await User.findAll({
       include: { model: UserLanguageRole, include: [Role, Language] },
@@ -38,9 +39,9 @@ exports.getUsers = async (req, res, next) => {
             id: ulr.id,
             role: ulr.role.role_value,
             language: {
-              language_code: ulr.language.language_code,
-              language_name_native: ulr.language.language_name_native,
-              language_name_english: ulr.language.language_name_english,
+              code: ulr.language.language_code,
+              name_native: ulr.language.language_name_native,
+              name_english: ulr.language.language_name_english,
             },
           })),
         };
@@ -59,12 +60,11 @@ exports.putRolesByUserEmail = async (req, res, next) => {
   try {
     /* data = [{
       languageCode,
-      roleValue
+      role
     }] */
     const { userEmail, data } = req.body;
 
     let user = await User.findOne({ where: { email: userEmail } });
-
 
     if (!user) {
       const error = new Error("User not found");
@@ -78,7 +78,7 @@ exports.putRolesByUserEmail = async (req, res, next) => {
           where: { language_code: item.languageCode },
         });
         let role = await Role.findOne({
-          where: { role_value: item.roleValue },
+          where: { role_value: item.role },
         });
 
         return UserLanguageRole.update(
@@ -96,8 +96,8 @@ exports.putRolesByUserEmail = async (req, res, next) => {
     res.json({
       success: true,
       message: result.length + " value(s) updated successfully",
-      data: result
-    })
+      data: result,
+    });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
